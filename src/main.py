@@ -9,6 +9,7 @@ def send_welcome(message):
         bot.send_photo(message.chat.id, photo)
 
 
+
 if __name__ == '__main__':
     try:
         print("Бот запущен")
