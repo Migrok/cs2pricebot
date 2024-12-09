@@ -1,36 +1,40 @@
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-import time
+import requests
+import json
+from bs4 import BeautifulSoup
 
-
-def parse_steam():
-    print("start parsing")
-    driver_path = "/usr/bin/chromedriver"
-    driver = webdriver.Chrome(service=Service(driver_path))
-    print("driver on")
+def download_json():
     url = "https://steamcommunity.com/market/listings/730/Charm%20%7C%20Die-cast%20AK/render/?query=&start=0&count=100&country=RU&language=russian&currency=5"
-    driver.get(url)
-    price_data = ''
-
-    try:
-        print("trying to connect")
-        WebDriverWait(driver, 15).until(
-            EC.presence_of_element_located((By.CLASS_NAME, "market_listing_price"))
-        )
-
-        item_names = driver.find_elements(By.CLASS_NAME, "market_listing_row_details_attribute")[:20]
-        prices = driver.find_elements(By.CLASS_NAME, "market_listing_price_with_fee")[:20]
-
-        time.sleep(2)
+    response = requests.get(url)
+    if response.status_code == 200:
+        print("JSON data downloaded successfully.")
+        with open("steam_data.json", "w", encoding="utf-8") as f:
+            json.dump(response.json(), f, ensure_ascii=False, indent=4)
+        print("File saved as steam_data.json")
+    else:
+        print(f"Failed to retrieve data. HTTP Status code: {response.status_code}")
 
 
-        for i in range(min(10, len(item_names))):
-            price_data += f"{item_names[i].text} = {prices[i].text}\n"
-            print(f"{item_names[i].text} = {prices[i].text}")
-    finally:
-        print("closing driver")
-        driver.quit()
-    return price_data
+def parse_prices():
+    pattern_price_dict = {}
+    download_json()
+    print("Opening JSON data")
+    with open("steam_data.json", "r", encoding="utf-8") as f:
+        data = json.load(f)
+    results_html = data.get('results_html')
+    if results_html:
+        soup = BeautifulSoup(results_html, 'html.parser')
+        print("Parsing")
+        prices = soup.find_all(class_='market_listing_price market_listing_price_with_fee')
+        patterns = soup.find_all(class_='market_listing_row_details_attribute')
+        print("Count of patterns = ", len(patterns))
+        print("Count of prices = ", len(prices))
+        for pattern, price in zip(patterns, prices):
+            pattern_text = pattern.get_text(strip=True).replace("Шаблон брелка: ", "")
+            price_text = price.get_text(strip=True)
+            if price_text == "Продано!":
+                continue
+            pattern_price_dict[pattern_text] = price_text
+    else:
+        print("Ключ 'results_html' не найден в JSON.")
+    return pattern_price_dict
+
