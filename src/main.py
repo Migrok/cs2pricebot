@@ -1,4 +1,5 @@
 import telebot
+import threading
 from decouple import config
 from parser import parse_prices
 
@@ -16,11 +17,14 @@ def get_prices(message):
     bot.reply_to(message, f"{pattern_price_str}")
 
 def pattern_price_dict_to_str(pattern_price_dict):
-    pattern_price_str = ""
-    for key, value in pattern_price_dict.items():
-        pattern_price_str += f"{key} = {value}\n"
-    return pattern_price_str
+    pattern_price_list = []
+    for listing_id, info in pattern_price_dict.items():
+        pattern = info["pattern"] if info["pattern"] else "None"
+        price = info["price"]
+        pattern_price_list.append(f"Шаблон: {pattern} = {price}")
 
+    pattern_price_str = "\n".join(pattern_price_list)
+    return pattern_price_str
 
 if __name__ == '__main__':
     try:
