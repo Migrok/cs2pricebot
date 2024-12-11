@@ -3,7 +3,7 @@ import threading
 import time
 import json
 from decouple import config
-from parser import parse
+from parser import parse, get_old_filtered_data
 
 bot = telebot.TeleBot(config('TOKEN'))
 
@@ -29,11 +29,20 @@ def send_welcome(message):
         bot.send_photo(message.chat.id, photo)
     print(f"\nUser {message.chat.id} subscribed.\n")
 
-#@bot.message_handler(commands=['parse'])
-#def get_prices(message):
-#    bot.reply_to(message, "Паршу")
-#    pattern_price_str = pattern_price_dict_to_str(parse_prices())
-#    bot.reply_to(message, f"{pattern_price_str}")
+@bot.message_handler(commands=['parse'])
+def get_prices(message):
+    pattern_price_str = data_to_str(get_old_filtered_data())
+    bot.reply_to(message, f"Лоты с шаблоном <24000 и >90000:\n{pattern_price_str}")
+
+@bot.message_handler(commands=["stop"])
+def stop_command(message):
+    if message.chat.id in subscribers:
+        subscribers.remove(message.chat.id)
+        save_subscribers()  # Сохраняем подписчиков в файл
+        bot.send_message(message.chat.id, "Вы отписались от уведомлений.")
+        print(f"User {message.chat.id} unsubscribed.")
+    else:
+        bot.send_message(message.chat.id, "Вы не были подписаны.")
 
 def data_to_str(data_dict):
     data_list = []
@@ -46,10 +55,14 @@ def data_to_str(data_dict):
     return data_str
 
 def send_notifications(data):
+    count_data = len(data)
     data_str = data_to_str(data)
     for chat_id in subscribers:
         try:
-            bot.send_message(chat_id, f"Выставлены новые лоты:\n{data_str}")
+            if count_data == 1:
+                bot.send_message(chat_id, f"Выставлен новый лот:\n{data_str}")
+            else:
+                bot.send_message(chat_id, f"Выставлены новые лоты:\n{data_str}")
         except Exception as e:
             print(f"Ошибка отправки уведомления пользователю {chat_id}: {e}")
 
