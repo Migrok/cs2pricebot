@@ -49,8 +49,15 @@ def data_to_str(data_dict):
     for listing_id, info in data_dict.items():
         pattern = info["pattern"] if info["pattern"] else "None"
         price = info["price"]
-        data_list.append(f"Шаблон: {pattern} = {price}")
-
+        position = info["position"]
+        if int(info["pattern"]) < 24000 and int(info["pattern"]) >= 20000:
+            data_list.append(f"Позиция {position}: 🟥Шаблон: {pattern} = {price}")
+        elif int(info["pattern"]) < 20000 and int(info["pattern"]) >= 6000:
+            data_list.append(f"Позиция {position}: 🟧Шаблон: {pattern} = {price}")
+        elif int(info["pattern"]) < 6000:
+            data_list.append(f"Позиция {position}: 🟨Шаблон: {pattern} = {price}")
+        elif int(info["pattern"]) > 90000:
+            data_list.append(f"Позиция {position}: 🟦Шаблон: {pattern} = {price}")
     data_str = "\n".join(data_list)
     return data_str
 
@@ -93,7 +100,7 @@ def shutdown_command(message):
 if __name__ == '__main__':
     try:
         print("Бот запущен!")
-        periodic_parsing(20, parse)
+        periodic_parsing(10, parse)
         bot.infinity_polling()
     except Exception as e:
         print(f"Ошибка: {e}")

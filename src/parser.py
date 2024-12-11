@@ -22,6 +22,7 @@ def download_json():
 def parse_prices():
     download_json()
     data = {}
+    position = 1
     for i in range(4):
         print(f"Parsing №{i} start")
         with open(f"steam_data/steam_data{i}.json", "r", encoding="utf-8") as f:
@@ -45,7 +46,8 @@ def parse_prices():
             if price_tag:
                 price = price_tag.get_text(strip=True)
 
-            data[listing_id] = {"pattern": pattern, "price": price}
+            data[listing_id] = {"position": position, "pattern": pattern, "price": price}
+            position += 1
         print(f"Parsing №{i} end")
     print(f"End parsing with len(data) = {len(data)}")
 
@@ -83,7 +85,7 @@ def parse():
     else:
         print("\nThere is a new data!")
         for key, value in unique_data.items():
-            print(f"ID: {key}, Шаблон: {value['pattern']}, Цена: {value['price']}")
+            print(f"ID: {key}, Позиция {value['position']}:  Шаблон: {value['pattern']}, Цена: {value['price']}")
     print()
     return unique_data
 
