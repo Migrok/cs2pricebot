@@ -2,8 +2,9 @@ import telebot
 import threading
 import time
 import json
+import os
 from decouple import config
-from parser import parse, get_old_filtered_data
+from parser import parse, get_actual_filtered_data, filter_data
 
 bot = telebot.TeleBot(config('TOKEN'))
 
@@ -25,20 +26,19 @@ subscribers = load_subscribers()
 def send_welcome(message):
     subscribers.add(message.chat.id)
     save_subscribers()
-    with open('image.jpg', 'rb') as photo:
-        bot.send_photo(message.chat.id, photo)
+    bot.send_message(message.chat.id, "Вы подписались на уведомления!")
     print(f"\nUser {message.chat.id} subscribed.\n")
 
 @bot.message_handler(commands=['parse'])
 def get_prices(message):
-    pattern_price_str = data_to_str(get_old_filtered_data())
+    pattern_price_str = data_to_str(get_actual_filtered_data())
     bot.reply_to(message, f"Лоты с шаблоном <24000 и >90000:\n{pattern_price_str}")
 
 @bot.message_handler(commands=["stop"])
 def stop_command(message):
     if message.chat.id in subscribers:
         subscribers.remove(message.chat.id)
-        save_subscribers()  # Сохраняем подписчиков в файл
+        save_subscribers()
         bot.send_message(message.chat.id, "Вы отписались от уведомлений.")
         print(f"User {message.chat.id} unsubscribed.")
     else:
@@ -55,14 +55,16 @@ def data_to_str(data_dict):
     return data_str
 
 def send_notifications(data):
-    count_data = len(data)
-    data_str = data_to_str(data)
+    filtered_data = filter_data(data)
+    count_data = len(filtered_data)
+    data_str = data_to_str(filtered_data)
     for chat_id in subscribers:
         try:
-            if count_data == 1:
-                bot.send_message(chat_id, f"Выставлен новый лот:\n{data_str}")
-            else:
-                bot.send_message(chat_id, f"Выставлены новые лоты:\n{data_str}")
+            if count_data != 0:
+                if count_data == 1:
+                    bot.send_message(chat_id, f"Выставлен новый лот:\n{data_str}")
+                else:
+                    bot.send_message(chat_id, f"Выставлены новые лоты:\n{data_str}")
         except Exception as e:
             print(f"Ошибка отправки уведомления пользователю {chat_id}: {e}")
 
@@ -80,6 +82,14 @@ def periodic_parsing(interval, parse):
     thread = threading.Thread(target=wrapper, daemon=True)
     thread.start()
 
+@bot.message_handler(commands=["shutdown"])
+def shutdown_command(message):
+    if str(message.chat.id) == config("ADMIN_ID"):
+        bot.reply_to(message, "Бот отключается...")
+        os._exit(0)
+    else:
+        bot.reply_to(message, "У вас нет прав на выполнение этой команды.")
+
 if __name__ == '__main__':
     try:
         print("Бот запущен!")
@@ -87,3 +97,4 @@ if __name__ == '__main__':
         bot.infinity_polling()
     except Exception as e:
         print(f"Ошибка: {e}")
+

@@ -10,7 +10,7 @@ def download_json():
         url = f"https://steamcommunity.com/market/listings/730/Charm%20%7C%20Die-cast%20AK/render/?query=&start={borders[i]}&count=100&country=RU&language=russian&currency=5"
         response = requests.get(url)
         if response.status_code == 200:
-            time.sleep(1)
+            time.sleep(2)
             print(f"steam_data{i}.json data downloaded successfully.")
             with open(f"steam_data/steam_data{i}.json", "w", encoding="utf-8") as f:
                 json.dump(response.json(), f, ensure_ascii=False, indent=4)
@@ -61,7 +61,7 @@ def filter_data(data):
 
 def exclude_existing_keys(new_data):
     old_data = get_old_data()
-
+    print(f"len(old_data) = {len(old_data)}")
     unique_data = {
         key: value for key, value in new_data.items() if key not in old_data
     }
@@ -69,12 +69,14 @@ def exclude_existing_keys(new_data):
         unique_data = 0
 
     old_data.update(new_data)
+    #old_data = new_data
     save_new_data(old_data)
 
     return unique_data
 
 def parse():
     data = parse_prices()
+    save_actual_data(data)
     unique_data = exclude_existing_keys(data)
     if unique_data == 0:
         print("\nThere is no new data.")
@@ -94,12 +96,31 @@ def get_old_data():
         old_data = {}
     return old_data
 
+def get_actual_data():
+    actual_data_file = "steam_data/actual_data.json"
+    try:
+        with open(actual_data_file, "r", encoding="utf-8") as f:
+            actual_data = json.load(f)
+    except FileNotFoundError:
+        actual_data = {}
+    return actual_data
+
 def save_new_data(new_data):
     old_data_file = "steam_data/old_data.json"
     with open(old_data_file, "w", encoding="utf-8") as f:
         json.dump(new_data, f, ensure_ascii=False, indent=4)
 
+def save_actual_data(actual_data):
+    actual_data_file = "steam_data/actual_data.json"
+    with open(actual_data_file, "w", encoding="utf-8") as f:
+        json.dump(actual_data, f, ensure_ascii=False, indent=4)
+
 def get_old_filtered_data():
     data = get_old_data()
+    filtered_data = filter_data(data)
+    return filtered_data
+
+def get_actual_filtered_data():
+    data = get_actual_data()
     filtered_data = filter_data(data)
     return filtered_data
