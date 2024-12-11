@@ -49,10 +49,6 @@ def parse_prices():
         print(f"Parsing №{i} end")
     print(f"End parsing with len(data) = {len(data)}")
 
-    filtered_data = filter_data(data)
-    for listing_id, info in filtered_data.items():
-        print(f"Шаблон: {info['pattern']} = {info['price']}")
-
     return data
 
 def filter_data(data):
@@ -63,4 +59,35 @@ def filter_data(data):
     }
     return filtered_data
 
-parse_prices()
+def exclude_existing_keys(new_data, old_data_file):
+    try:
+        with open(old_data_file, "r", encoding="utf-8") as f:
+            old_data = json.load(f)
+    except FileNotFoundError:
+        old_data = {}
+
+    unique_data = {
+        key: value for key, value in new_data.items() if key not in old_data
+    }
+    if len(unique_data) == 0:
+        unique_data = 0
+
+    old_data.update(new_data)
+
+    with open(old_data_file, "w", encoding="utf-8") as f:
+        json.dump(old_data, f, ensure_ascii=False, indent=4)
+
+    return unique_data
+
+def parse():
+    data = parse_prices()
+    old_data_file = "steam_data/old_data.json"
+    unique_data = exclude_existing_keys(data, old_data_file)
+    if unique_data == 0:
+        print("\nThere is no new data.")
+    else:
+        print("\nThere is a new data!")
+        for key, value in unique_data.items():
+            print(f"ID: {key}, Шаблон: {value['pattern']}, Цена: {value['price']}")
+        print()
+    return unique_data
