@@ -44,6 +44,18 @@ def stop_command(message):
     else:
         bot.send_message(message.chat.id, "Вы не были подписаны.")
 
+@bot.message_handler(commands=["shutdown"])
+def shutdown_command(message):
+    if str(message.chat.id) == config("ADMIN_ID"):
+        bot.reply_to(message, "Бот отключается...")
+        os._exit(0)
+    else:
+        bot.reply_to(message, "У вас нет прав на выполнение этой команды.")
+
+@bot.message_handler(commands=["work"])
+def work_command(message):
+    bot.reply_to(message, "Бот работает.")
+
 def data_to_str(data_dict):
     data_list = []
     for listing_id, info in data_dict.items():
@@ -88,14 +100,6 @@ def periodic_parsing(interval, parse):
 
     thread = threading.Thread(target=wrapper, daemon=True)
     thread.start()
-
-@bot.message_handler(commands=["shutdown"])
-def shutdown_command(message):
-    if str(message.chat.id) == config("ADMIN_ID"):
-        bot.reply_to(message, "Бот отключается...")
-        os._exit(0)
-    else:
-        bot.reply_to(message, "У вас нет прав на выполнение этой команды.")
 
 if __name__ == '__main__':
     try:
